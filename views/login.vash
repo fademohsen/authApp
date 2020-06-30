@@ -53,6 +53,9 @@
                   <div class="text-center">
                     <a class="small" href="/register">Create an Account!</a>
                   </div>
+                  <div class="text-center">
+                    <a class="small" href="/">Go To Home</a>
+                  </div>
                 </div>
               </div>
             </div>

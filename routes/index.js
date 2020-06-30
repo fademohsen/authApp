@@ -7,7 +7,7 @@ var admin = require("firebase-admin");
 
 var serviceAccount = require("../serviceAccountKey.json");
 
-var db = require('../helper/db');
+var db = require("../helper/db");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -15,9 +15,11 @@ admin.initializeApp({
 });
 
 /* GET home page. */
-router.get("/", function (req, res, next) {
-  db.User.count(function(err , count) {
-    res.render("index", { title: "index" , usersCount : count });
+router.get("/dashboard", async function (req, res, next) {
+  res.render("dashboard", {
+    title: "index",
+    usersCount: await db.usersCount(),
+    productsCount: await db.productsCount(),
   });
 });
 
@@ -43,8 +45,8 @@ router.get("/register", function (req, res, next) {
 
 /* POST register page. */
 router.post("/register", function (req, res, next) {
-  db.User.create(req.body).then(function(result) {
-    res.redirect('/');
+  db.User.create(req.body).then(function (result) {
+    res.redirect("/");
   });
 });
 
@@ -53,7 +55,6 @@ router.post("/register", function (req, res, next) {
 //   res.locals.user = req.user;
 //   next();
 // })
-
 
 /* GET table page. */
 router.get("/table", function (req, res, next) {
@@ -101,31 +102,41 @@ router.post("/api/login", function (req, res) {
   }
 });
 
-
 router.get("/notifications", (req, res) => {
-   db.User.find(function(err , users) {
-     res.render("notifications" , {users : users});
-   })
+  db.User.find(function (err, users) {
+    res.render("notifications", { users: users });
+  });
 });
 
 router.post("/sendNotification", (req, res) => {
-
   if (req.body.userId === "all") {
-    admin.messaging().sendAll({titel : req.body.title , body : req.body.text})
-  }else{
-    db.User.findOne({_id : req.body.userId} , (err , user) => {
+    admin.messaging().sendAll({ titel: req.body.title, body: req.body.text });
+  } else {
+    db.User.findOne({ _id: req.body.userId }, (err, user) => {
       console.log(user);
-      
+
       //  admin.messaging().send({token : user.token , data : {titel : req.body.title , body : req.body.text}});
     });
   }
   res.send("notification sent");
 });
 
-router.post('/registerToken' , (req , res)=>{
-  console.log("token" , req.body.token)
-  db.User.findById()
-  users.push({token : req.body.token});
+router.post("/registerToken", (req, res) => {
+  console.log("token", req.body.token);
+  db.User.findById();
+  users.push({ token: req.body.token });
+});
+
+router.get("/", (req, res) => {
+  db.Product.find((err, products) => {
+    res.render("products", { products });
+  });
+});
+
+router.get("/product/:id", (req, res) => {
+  db.Product.findById(req.params.id, (err, product) => {
+    res.render("product", { product });
+  });
 });
 
 module.exports = router;
