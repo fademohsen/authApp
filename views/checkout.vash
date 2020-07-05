@@ -1,4 +1,4 @@
-@html.extend('userlayout', function(model) {
+@html.extend('userLayout', function(model) {
    @html.block('styles' , function(){
       <script src="https://js.stripe.com/v3/"></script>
       <link rel="stylesheet" href="/css/stripe.css">
@@ -14,19 +14,19 @@
             <div class="col-md-4 order-md-2 mb-4">
                 <h4 class="d-flex justify-content-between align-items-center mb-3">
                     <span class="text-muted">Your cart</span>
-                    <span class="badge badge-secondary badge-pill">5</span>
+                    <span class="badge badge-secondary badge-pill">@model.cartCount</span>
                 </h4>
                 <ul class="list-group mb-3">
-                @model.cart.map(function(c) {
-                    <li class="list-group-item d-flex justify-content-between lh-condensed" >
+                @model.cart.forEach(function(c){
+                    <li class="list-group-item d-flex justify-content-between lh-condensed">
                         <div>
                             <h6 class="my-0">@c.product.title</h6>
                             <small class="text-muted">@c.product.subTitle</small>
                         </div>
-                        <span class="text-muted"> Count(5)</span>
-                        <span class="text-muted"> @c.product.price</span>
+                        <span class="text-muted"> Count(@c.count)</span>
+                        <span class="text-muted"> @c.product.price $ </span>
                     </li>
-        })
+                })
                     <li class="list-group-item d-flex justify-content-between">
                         <span>Total (USD)</span> <strong>@model.total $</strong>
                     </li>
@@ -34,26 +34,26 @@
             </div>
             <div class="col-md-8 order-md-1">
                 <h4 class="mb-3">Billing address</h4>
-                <form class="needs-validation" novalidate="">
+                <form action="/checkout/charge" method="post" id="payment-form" class="needs-validation" novalidate="">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="firstName">First name</label>
-                            <input type="text" class="form-control" id="firstName" placeholder="" value=""
-                                required="" />
+                            <input type="text" class="form-control" id="firstName" placeholder="" value="@model.user.firstName"
+                                required="" name="firstName"/>
                             <div class="invalid-feedback">
                                 Valid first name is required.
                             </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="lastName">Last name</label>
-                            <input type="text" class="form-control" id="lastName" placeholder="" value="" required="" />
+                            <input type="text" class="form-control" id="lastName" placeholder="" value="@model.user.lastName" required="" name="lastName" />
                             <div class="invalid-feedback">Valid last name is required.</div>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="email">Email<span class="text-muted">(Optional)</span></label>
-                        <input type="email" class="form-control" id="email" placeholder="you@example.com" />
+                        <input type="email" class="form-control" id="email" placeholder="you@example.com" value="@model.user.email" name="email"/>
                         <div class="invalid-feedback">
                             Please enter a valid email address for shipping updates.
                         </div>
@@ -61,7 +61,7 @@
 
                     <div class="mb-3">
                         <label for="address">Address</label>
-                        <input type="text" class="form-control" id="address" placeholder="1234 Main St" required="" />
+                        <input type="text" class="form-control" id="address" placeholder="1234 Main St" required="" name="address"/>
                         <div class="invalid-feedback">
                             Please enter your shipping address.
                         </div>
@@ -69,57 +69,52 @@
 
                     <div class="mb-3">
                         <label for="address2">Address 2<span class="text-muted">(Optional)</span></label>
-                        <input type="text" class="form-control" id="address2" placeholder="Apartment or suite" />
+                        <input type="text" class="form-control" id="address2" placeholder="Apartment or suite" name="address2"/>
                     </div>
 
                     <div class="row">
                         <div class="col-md-5 mb-3">
                             <label for="country">Country</label>
-                            <select class="custom-select d-block w-100" id="country" required="">
-                                <option value="">Choose...</option>
-                                <option>Palestine</option>
+                            <select class="custom-select d-block w-100" id="country" required="" name="country">
+                                <option disabled selected>Choose...</option>
+                                @model.countries.forEach(function(country){
+                                    <option value="@country.id">@country.name</option>
+                                })
                             </select>
                             <div class="invalid-feedback">
                                 Please select a valid country.
                             </div>
                         </div>
                         <div class="col-md-4 mb-3">
-                            <label for="state">State</label>
-                            <select class="custom-select d-block w-100" id="state" required="">
-                                <option value="">Choose...</option>
-                                <option>Gaza</option>
+                            <label for="state">City</label>
+                            <select class="custom-select d-block w-100" id="city" required="" name="city">
+                                <option disabled selected>Choose...</option>
                             </select>
                             <div class="invalid-feedback">
-                                Please provide a valid state.
+                                Please provide a valid city.
                             </div>
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="zip">Zip</label>
-                            <input type="text" class="form-control" id="zip" placeholder="" required="" />
+                            <input type="text" class="form-control" id="zip" placeholder="" required="" name="zip" />
                             <div class="invalid-feedback">Zip code required.</div>
                         </div>
                     </div>
                     <hr class="mb-4" />
 
                     <h4 class="mb-3">Payment</h4>
+                    <div>
+                        <label for="card-element">
+                            Credit or debit card
+                        </label>
+                        <div id="card-element">
+                            <!-- A Stripe Element will be inserted here. -->
+                        </div>
 
-                    <div class="d-block my-3">
-                        <div class="custom-control custom-radio">
-                            <input id="credit" name="paymentMethod" type="radio" class="custom-control-input" checked=""
-                                required="" />
-                            <label class="custom-control-label" for="credit">Credit card</label>
-                        </div>
-                        <div class="custom-control custom-radio">
-                            <input id="debit" name="paymentMethod" type="radio" class="custom-control-input"
-                                required="" />
-                            <label class="custom-control-label" for="debit">Debit card</label>
-                        </div>
-                        <div class="custom-control custom-radio">
-                            <input id="paypal" name="paymentMethod" type="radio" class="custom-control-input"
-                                required="" />
-                            <label class="custom-control-label" for="paypal">PayPal</label>
-                        </div>
+                        <!-- Used to display form errors. -->
+                        <div id="card-errors" role="alert"></div>
                     </div>
+                    
                     <hr class="mb-4" />
                     <button class="btn btn-primary btn-lg btn-block" type="submit">
                         Continue to checkout
@@ -127,9 +122,20 @@
                 </form>
             </div>
         </div>
+  
   })
 
   @html.block('scripts' , function(){
        <script src="/js/stripe.js"></script>
+       <script>
+            $("#country").change(function(){
+                var id = $(this).val();
+                $.get('/checkout/citeis/' + id).done(function(data){
+                    data.forEach(function(city){
+                        $('#city').append(`<option value="${city.id}">${city.name}</option>`);
+                    })
+                })
+            })
+       </script>
   })
 })
