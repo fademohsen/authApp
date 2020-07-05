@@ -1,11 +1,12 @@
-var express = require('express');
+var express = require("express");
 var router = express.Router();
-var db = require('../helper/db')
+var User = require("../models/user");
+
 /* GET users listing. */
-router.get('/', function(req, res, next) {
-  db.User.find(function(err , users) {
-    res.render('admin/users', {users});
-  })
+router.get("/", function (req, res, next) {
+  User.find(function (err, users) {
+    res.render("admin/users", { users });
+  });
 });
 
 module.exports = router;

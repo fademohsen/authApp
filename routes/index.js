@@ -7,7 +7,9 @@ var admin = require("firebase-admin");
 
 var serviceAccount = require("../serviceAccountKey.json");
 
-var db = require("../helper/db");
+var User = require("../models/user");
+var Product = require("../models/product");
+var shared = require("../models/shared");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
@@ -18,8 +20,8 @@ admin.initializeApp({
 router.get("/dashboard", async function (req, res, next) {
   res.render("dashboard", {
     title: "index",
-    usersCount: await db.usersCount(),
-    productsCount: await db.productsCount(),
+    usersCount: await shared.usersCount(),
+    productsCount: await shared.productsCount(),
   });
 });
 
@@ -32,10 +34,16 @@ router.get("/login", function (req, res, next) {
 router.post(
   "/login",
   passport.authenticate("local", {
-    successRedirect: "/",
     failureRedirect: "/login",
     failureFlash: true,
-  })
+  }),
+  (req, res) => {
+    if (req.session.passport.user.isAdmin) {
+      res.redirect("/dashboard");
+    } else {
+      res.redirect("/");
+    }
+  }
 );
 
 /* GET register page. */
@@ -45,7 +53,7 @@ router.get("/register", function (req, res, next) {
 
 /* POST register page. */
 router.post("/register", function (req, res, next) {
-  db.User.create(req.body).then(function (result) {
+  User.create(req.body).then(function (result) {
     res.redirect("/");
   });
 });
@@ -112,7 +120,7 @@ router.post("/sendNotification", (req, res) => {
   if (req.body.userId === "all") {
     admin.messaging().sendAll({ titel: req.body.title, body: req.body.text });
   } else {
-    db.User.findOne({ _id: req.body.userId }, (err, user) => {
+    User.findOne({ _id: req.body.userId }, (err, user) => {
       console.log(user);
 
       //  admin.messaging().send({token : user.token , data : {titel : req.body.title , body : req.body.text}});
@@ -123,20 +131,35 @@ router.post("/sendNotification", (req, res) => {
 
 router.post("/registerToken", (req, res) => {
   console.log("token", req.body.token);
-  db.User.findById();
+  User.findById();
   users.push({ token: req.body.token });
 });
 
-router.get("/", (req, res) => {
-  db.Product.find((err, products) => {
-    res.render("products", { products });
+router.get("/", async (req, res) => {
+  Product.find(async (err, products) => {
+    res.render("products", {
+      products,
+      cartCount: await shared.getCartCount(
+        req.session.passport ? req.session.passport.user._id : null
+      ),
+    });
   });
 });
 
-router.get("/product/:id", (req, res) => {
-  db.Product.findById(req.params.id, (err, product) => {
-    res.render("product", { product });
+router.get("/product/:id", async (req, res) => {
+  Product.findById(req.params.id, async (err, product) => {
+    res.render("product", {
+      product,
+      cartCount: await shared.getCartCount(
+        req.session.passport ? req.session.passport.user._id : null
+      ),
+    });
   });
+});
+
+router.get("/logout", (req, res) => {
+  req.logout();
+  res.redirect("/");
 });
 
 module.exports = router;

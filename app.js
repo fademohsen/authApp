@@ -5,10 +5,13 @@ var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 
 var indexRouter = require("./routes/index");
+var checkoutRouter = require("./routes/checkout");
+var cartRouter = require('./routes/cart');
 var usersRouter = require("./routes/users");
 var productsRouter = require("./routes/products");
 var postsRouter = require("./routes/api/posts");
 var tagsRouter = require("./routes/api/tag");
+
 
 var passport = require("passport");
 var passportLocal = require("passport-local");
@@ -18,7 +21,10 @@ const passportJWT = require("passport-jwt");
 const JWTStrategy = passportJWT.Strategy;
 const ExtractJWT = passportJWT.ExtractJwt;
 
-var db = require("./helper/db");
+var User = require('./models/user');
+
+var admin = require('./middlewares/admin');
+var user = require('./middlewares/user');
 
 var app = express();
 
@@ -35,11 +41,11 @@ passport.use(
     function (accessToken, refreshToken, profile, cb) {
       console.log("profile", profile);
 
-      db.User.findOne({ gId: profile._json.sub }, function (err, res) {
+      User.findOne({ gId: profile._json.sub }, function (err, res) {
         if (res) {
           cb(null, res);
         } else {
-          db.User.create({
+          User.create({
             gId: profile._json.sub,
             firstName: profile._json.given_name,
             lastName: profile._json.family_name,
@@ -71,7 +77,7 @@ passport.use(
 
 passport.use(
   new passportLocal(function (username, password, cb) {
-    db.User.findOne({ email: username }, function (err, res) {
+    User.findOne({ email: username }, function (err, res) {
       if (res) {
         if (res.password == password) {
           cb(null, res);
@@ -95,12 +101,12 @@ passport.use(
     },
     function (accessToken, refreshToken, profile, cb) {
 
-      db.User.findOne({ fbId: profile._json.id }, function (err, res) {
+      User.findOne({ fbId: profile._json.id }, function (err, res) {
         if (res) {
           cb(null, res);
         } else {
           let fullName = profile._json.name.split(" ");
-          db.User.create({
+          User.create({
             fbId: profile._json.id,
             firstName: fullName[0],
             lastName: fullName[1],
@@ -156,14 +162,15 @@ var auth = passport.authenticate("jwt", { session: false });
 
 app.use(function(req , res , next) {
   res.locals.user = req.session.passport ? req.session.passport.user : null;
-  console.log("req.session" , req.session);
   console.log("res.locals.user" , res.locals.user);
   next();
 })
 
 app.use("/", indexRouter);
-app.use("/admin/users", usersRouter);
-app.use("/admin/products", productsRouter);
+app.use("/checkout", user , checkoutRouter);
+app.use('/cart' , user, cartRouter);
+app.use("/admin/users", admin, usersRouter);
+app.use("/admin/products", admin,  productsRouter);
 
 app.use("/api/posts", auth, postsRouter);
 app.use("/api/tags", auth, tagsRouter);

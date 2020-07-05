@@ -10,6 +10,8 @@
 
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link rel="stylesheet" href="https://bootswatch.com/4/materia/bootstrap.min.css">
+                @html.block('styles')
+
 </head>
 
 <body>
@@ -26,12 +28,19 @@
             </ul>
             <div class="form-inline my-2 my-lg-0">
                 <input class="form-control mr-sm-2 ml-15" type="text" placeholder="Search" />
-                <a class="p-cart">
-                    <span class="material-icons md-48 ">shopping_cart</span>
-                    <span class="badge badge-light bg-secondary">4</span>
-                </a>
+                @if(model.user){
+                    <a href="/checkout" class="p-cart" style="color:black">
+                        <span class="material-icons md-48 ">shopping_cart</span>
+                        <span class="badge badge-light bg-secondary">@model.cartCount</span>
+                    </a>
+                }
+                @if(!model.user){
                 <a href="/register" class="btn btn-secondary my-2 my-sm-0 ml-4">Sign up</a>
                 <a href="/login" class="btn btn-secondary my-2 my-sm-0 ml-2">Login</a>
+                }else{
+                    <span class="ml-2 mr-2">@model.user.firstName</span>
+                    <a href="/logout" class="btn btn-secondary my-2 my-sm-0 ml-2">Logout</a>
+                }
             </div>
         </div>
     </nav>
@@ -49,6 +58,7 @@
      </footer>
 
   </div>
+                  @html.block('scripts')
 </body>
 
 </html>
